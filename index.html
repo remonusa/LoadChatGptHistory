@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT History Viewer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+    <style>
+        .user-message { background-color: #f3f4f6; }
+        .assistant-message { background-color: transparent; }
+        pre { position: relative; }
+        pre code { border-radius: 5px; }
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px 10px;
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <div id="sidebar" class="w-64 bg-gray-800 text-white p-4 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Conversations</h2>
+            <input type="file" id="file-input" class="mb-4 bg-gray-700 text-white p-2 rounded cursor-pointer"/>
+            <ul id="conversation-list"></ul>
+        </div>
+        <div class="flex-1 p-8 overflow-y-auto">
+            <h1 class="text-3xl font-bold mb-4">ChatGPT History</h1>
+            <div id="conversation-content"></div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function() {
+            const converter = new showdown.Converter();
+
+            function formatMessage(content) {
+                let formatted = converter.makeHtml(content);
+                formatted = formatted.replace(/<pre><code>([\s\S]*?)<\/code><\/pre>/g, function(match, p1) {
+                    let highlightedCode;
+                    try {
+                        highlightedCode = hljs.highlightAuto(p1).value;
+                    } catch (err) {
+                        console.warn('Could not highlight block, using plain text.');
+                        highlightedCode = hljs.escapeHTML(p1);
+                    }
+                    return `<pre><code>${highlightedCode}</code><button class="copy-button">Copy</button></pre>`;
+                });
+                return formatted;
+            }
+
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Code copied to clipboard!');
+                }, (err) => {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            // Event listener for file input
+            $('#file-input').on('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        let data;
+                        try {
+                            data = JSON.parse(e.target.result);
+                        } catch (error) {
+                            alert('Invalid JSON file. Please upload a valid conversations.json file.');
+                            console.error(error);
+                            return;
+                        }
+                        displayConversations(data);
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            function displayConversations(data) {
+                const conversationList = $('#conversation-list');
+                const conversationContent = $('#conversation-content');
+
+                conversationList.empty(); // Clear previous data
+                data.sort((a, b) => b.update_time - a.update_time);
+
+                data.forEach((conversation, index) => {
+                    const date = new Date(conversation.update_time * 1000).toLocaleDateString();
+                    conversationList.append(`<li class="cursor-pointer hover:bg-gray-700 p-2 rounded" data-index="${index}">${conversation.title}<br><small>${date}</small></li>`);
+                });
+
+                conversationList.on('click', 'li', function() {
+                    const index = $(this).data('index');
+                    const conversation = data[index];
+
+                    if (!conversation || !conversation.mapping) {
+                        alert('Conversation data is missing or invalid.');
+                        console.error('Invalid conversation structure:', conversation);
+                        return;
+                    }
+
+                    conversationContent.html('');
+                    const messages = Object.values(conversation.mapping)
+                        .filter(node => node && node.message)
+                        .sort((a, b) => a.message.create_time - b.message.create_time);
+
+                    messages.forEach(node => {
+                        const message = node.message;
+                        if (!message || !message.content || !message.content.parts) return;
+
+                        const content = message.content.parts.join('\n');
+                        const isAssistant = message.author.role === 'assistant';
+                        const role = isAssistant ? 'ChatGPT' : 'User';
+                        const messageClass = isAssistant ? 'assistant-message' : 'user-message';
+                        const formattedContent = formatMessage(content);
+
+                        conversationContent.append(`
+                            <div class="mb-4 ${messageClass} p-4 rounded">
+                                <strong>${role}:</strong>
+                                <div>${formattedContent}</div>
+                            </div>
+                        `);
+                    });
+
+                    $('pre code').each(function(i, block) {
+                        hljs.highlightBlock(block);
+                    });
+
+                    $('.copy-button').on('click', function() {
+                        const codeBlock = $(this).siblings('code');
+                        copyToClipboard(codeBlock.text());
+                    });
+                });
+
+                // Auto-click the first conversation to display it
+                conversationList.find('li:first').click();
+            }
+        });
+    </script>
+</body>
+</html>
