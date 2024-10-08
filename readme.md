@@ -10,13 +10,13 @@ A standalone HTML viewer for displaying ChatGPT conversation history without req
 - **Syntax highlighting** for code blocks using `highlight.js`.
 - **Copy code snippets** directly from the viewer.
 - **User-friendly UI** built with Tailwind CSS.
-- **Standalone operation**—works without a web server.
+- **Standalone operation**—works offline without needing a Python server.
 
 ## How to Use
 ### 1. Clone the Repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/chatgpt-history-viewer.git
-cd chatgpt-history-viewer
+git clone https://github.com/remonusa/LoadChatGptHistory.git
+cd LoadChatGptHistory
 ```
 
 ### 2. Open the `index.html` file:
@@ -29,60 +29,17 @@ start index.html # Windows
 ### 3. Upload a `conversations.json` file:
 - Use the **file upload button** on the left sidebar to select a valid ChatGPT history file.
 
-## How to Download Your ChatGPT History
-To download your ChatGPT chat history:
+## How to Download Your ChatGPT History in `conversations.json` Format
+To download your ChatGPT chat history in the correct `conversations.json` format:
 
 1. **Sign in to ChatGPT** at [chat.openai.com](https://chat.openai.com).
-2. Click on your profile icon in the top right corner.
-3. Click **Settings**.
-4. Under **Data Controls**, select **Export Data**.
-5. Confirm the export, and you will receive an email with a download link.
-6. Download the `.zip` file from the link. Extract it to find the `chat.html` file.
-7. **Convert `chat.html`** to `conversations.json` using the format below.
+2. **Click on your profile icon** in the top right corner.
+3. Go to **Settings** and click **Data Controls**.
+4. Under **Export Data**, select **Export**.
+5. Confirm the export, and you’ll receive an email with a link to download your data.
+6. Download the `.zip` file and extract it. Inside, you’ll find `conversations.json`—the file our HTML page needs for local viewing.
 
-### `conversations.json` Format:
-The `conversations.json` file should be structured like this:
-
-```json
-[
-    {
-        "title": "Sample Conversation",
-        "update_time": 1693078395,
-        "mapping": {
-            "node_1": {
-                "message": {
-                    "id": "node_1",
-                    "author": {
-                        "role": "user"
-                    },
-                    "content": {
-                        "parts": [
-                            "Hello, how are you?"
-                        ]
-                    },
-                    "create_time": 1693078300
-                }
-            },
-            "node_2": {
-                "message": {
-                    "id": "node_2",
-                    "author": {
-                        "role": "assistant"
-                    },
-                    "content": {
-                        "parts": [
-                            "I'm fine, thank you! How can I assist you today?"
-                        ]
-                    },
-                    "create_time": 1693078350
-                }
-            }
-        }
-    }
-]
-```
-
-### 4. Place the file in the same directory as `index.html`:
+### 4. Place the file in the same directory as `index.html` or use the file upload button:
 - The viewer will automatically read and display the data when the file is uploaded using the built-in file selector.
 
 ## Contributing
